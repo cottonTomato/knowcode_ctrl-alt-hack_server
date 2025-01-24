@@ -1,8 +1,20 @@
-import { ReqHandler } from '../../types';
-import { IUserOnboardDto } from './user.dto';
+import type { RequestHandler } from 'express';
 import { db } from '../../db/db';
+import { userAccounts } from '../../db/schema';
 import { StatusCodes } from 'http-status-codes';
+import { clerkClient } from '@clerk/express';
 
-type AddUserHandler = ReqHandler<IUserOnboardDto>;
+export const onBoardUser: RequestHandler = async function (req, res) {
+  const userId = req.auth.userId!;
 
-export const addUserHandler: AddUserHandler = async function (req, res) {};
+  const user = await clerkClient.users.getUser(userId);
+
+  await db.insert(userAccounts).values({
+    userId: userId,
+    firstname: user.firstName!,
+    lastname: user.lastName!,
+    email: user.primaryEmailAddressId!,
+  });
+
+  res.status(StatusCodes.CREATED).json({ status: 'Success' });
+};

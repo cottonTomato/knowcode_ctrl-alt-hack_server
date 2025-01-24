@@ -2,74 +2,60 @@ import {
   pgTable,
   varchar,
   uuid,
-  index,
-  serial,
   unique,
   text,
   decimal,
   timestamp,
+  boolean,
+  smallint,
 } from 'drizzle-orm/pg-core';
 
-export const userAccounts = pgTable(
-  'user_account',
-  {
-    userId: uuid('user_id').defaultRandom().primaryKey(),
-    clerkUserId: varchar('clerk_user_id', { length: 255 }).notNull().unique(),
-    locationId: varchar('location_id', { length: 255 }).notNull(),
-    postalCode: varchar('postal_code', { length: 20 }).notNull(),
-  },
-  (users) => [
-    index('idx_location_id').on(users.locationId),
-    index('idx_postal_code').on(users.postalCode),
-  ]
-);
+export const userAccounts = pgTable('user_account', {
+  userId: varchar('user_id', { length: 255 }).primaryKey(),
+  firstname: varchar('firstname', { length: 20 }).notNull(),
+  lastname: varchar('lastname', { length: 20 }).notNull(),
+  email: varchar('email', { length: 255 }).notNull(),
+});
 
 export const friends = pgTable(
   'friends',
   {
-    userId1: uuid('user_id_1').references(() => userAccounts.userId),
-    userId2: uuid('user_id_2').references(() => userAccounts.userId),
+    userId: varchar('userId', { length: 255 }).references(
+      () => userAccounts.userId
+    ),
+    friendId: varchar('friendId', { length: 255 }).references(
+      () => userAccounts.userId
+    ),
   },
-  (friendEntry) => [unique().on(friendEntry.userId1, friendEntry.userId2)]
+  (friendEntry) => [unique().on(friendEntry.userId, friendEntry.friendId)]
 );
 
-export const tags = pgTable('tags', {
-  tagId: serial('tag_id').primaryKey(),
-  tag: varchar('tag', { length: 20 }).notNull().unique(),
-});
-
-export const userTags = pgTable(
-  'user_tags',
-  {
-    userId: uuid('user_id').references(() => userAccounts.userId),
-    tagId: serial('tag_id').references(() => tags.tagId),
-  },
-  (userTag) => [unique('unique_user_tag').on(userTag.userId, userTag.tagId)]
-);
-
-export const event = pgTable('crowdfund_event', {
+export const event = pgTable('event', {
   eventId: uuid('event_id').defaultRandom().primaryKey(),
-  locationId: varchar('location_id', { length: 255 }).notNull(),
-  postalCode: varchar('postal_code', { length: 20 }).notNull(),
+  name: varchar('event_name', { length: 50 }).notNull(),
   eventDescription: text('event_description').notNull(),
-  startTime: timestamp('start_time').notNull(),
-  endTime: timestamp('end_time').notNull(),
-  targetAmount: decimal('target_amount', { precision: 10, scale: 2 }).notNull(),
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date').notNull(),
+  locationId: varchar('location_id', { length: 255 }).notNull(),
+  isCrowdfund: boolean('is_crowdfund').default(false),
+  isVolunteer: boolean('is_volunteer').default(false),
+  fundraisingGoal: decimal('fundraising_goal', {
+    precision: 10,
+    scale: 2,
+  }).default('0.0'),
+  fundsRaised: decimal('funds_raised', {
+    precision: 10,
+    scale: 2,
+  }).default('0.0'),
+  volunteerRoles: smallint('volunteer_roles').default(0),
 });
-
-export const eventTags = pgTable(
-  'event_tags',
-  {
-    eventId: uuid('event_id').references(() => event.eventId),
-    tagId: serial('tag_id').references(() => tags.tagId),
-  },
-  (eventTag) => [unique('unique_user_tag').on(eventTag.eventId, eventTag.tagId)]
-);
 
 export const contributions = pgTable(
-  'contributions',
+  'user_contributions',
   {
-    userId: uuid('user_id').references(() => userAccounts.userId),
+    userId: varchar('user_id', { length: 255 }).references(
+      () => userAccounts.userId
+    ),
     eventId: uuid('event_id').references(() => event.eventId),
     amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
     contributedAt: timestamp('contributed_at').defaultNow(),
