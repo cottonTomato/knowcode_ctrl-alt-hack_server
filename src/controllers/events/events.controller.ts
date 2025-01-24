@@ -1,54 +1,30 @@
-import type { RequestHandler } from 'express';
 import type { ReqHandler } from '../../types';
-import { IAddFriendsDto } from './events.dto';
-import { db } from '../../db/db';
-import { userAccounts, friends, contributions } from '../../db/schema';
-import { and, eq, gte, lte } from 'drizzle-orm';
-import { sql } from 'drizzle-orm/sql';
+import { db, eventImages, events } from '../../db';
+import { eq, sql } from 'drizzle-orm';
 import { StatusCodes } from 'http-status-codes';
 
-type AddFriendHandler = ReqHandler<IAddFriendsDto>;
-
-export const addFriend: AddFriendHandler = async function (req, res) {
-  const { friendId } = req.body;
-  const userId = req.auth.userId!;
-
-  await db.insert(friends).values({ userId, friendId });
-
-  res.status(StatusCodes.CREATED).json({ status: 'Success' });
-};
-
-export const getFriendList: RequestHandler = async function (req, res) {
-  const userId = req.auth.userId!;
-
-  const now = new Date();
-  const firstDayOfLastMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() - 1,
-    1
-  );
-  const firstDayOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const friendEntries = await db
+export const getEvents: ReqHandler<object> = async function (req, res) {
+  const eventList = await db
     .select({
-      firstname: userAccounts.firstname,
-      lastname: userAccounts.lastname,
-      monthlyContributions: sql`SUM(${contributions.amount})`.as(
-        'total_contributions'
+      name: events.name,
+      description: events.description,
+      startDate: events.startDate,
+      endDate: events.endDate,
+      isVolunteer: events.isVolunteer,
+      isCrowdfund: events.isCrowdfund,
+      fundrasingGoad: events.fundraisingGoal,
+      fundsRaised: events.fundsRaised,
+      volunteerRoles: events.volunteerRoles,
+      volunteerCount: events.volunteerCount,
+      images: sql<
+        Array<{ url: string; altText: string }>
+      >`ARRAY_AGG(JSON_BUILD_OBJECT('url', ${eventImages.imageUri},'altText', ${eventImages.altText}))`.as(
+        'images'
       ),
     })
-    .from(friends)
-    .innerJoin(userAccounts, eq(friends.friendId, userAccounts.userId))
-    .leftJoin(
-      contributions,
-      and(
-        eq(contributions.userId, friends.friendId),
-        gte(contributions.contributedAt, firstDayOfLastMonth),
-        lte(contributions.contributedAt, firstDayOfThisMonth)
-      )
-    )
-    .where(eq(friends.userId, userId))
-    .groupBy(friends.friendId);
+    .from(events)
+    .leftJoin(eventImages, eq(events.eventId, eventImages.eventId))
+    .groupBy(events.eventId);
 
-  res.status(StatusCodes.OK).json({ status: 'Success', data: friendEntries });
+  res.status(StatusCodes.OK).json({ status: 'Success', data: eventList });
 };

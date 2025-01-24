@@ -30,10 +30,10 @@ export const friends = pgTable(
   (friendEntry) => [unique().on(friendEntry.userId, friendEntry.friendId)]
 );
 
-export const event = pgTable('event', {
+export const events = pgTable('event', {
   eventId: uuid('event_id').defaultRandom().primaryKey(),
   name: varchar('event_name', { length: 50 }).notNull(),
-  eventDescription: text('event_description').notNull(),
+  description: text('event_description').notNull(),
   startDate: timestamp('start_date').notNull(),
   endDate: timestamp('end_date').notNull(),
   locationId: varchar('location_id', { length: 255 }).notNull(),
@@ -48,6 +48,13 @@ export const event = pgTable('event', {
     scale: 2,
   }).default('0.0'),
   volunteerRoles: smallint('volunteer_roles').default(0),
+  volunteerCount: smallint('volunteer_count').default(0),
+});
+
+export const eventImages = pgTable('event_images', {
+  eventId: uuid('event_id').references(() => events.eventId),
+  imageUri: varchar('image_url', { length: 200 }).notNull(),
+  altText: text('alt_text').notNull(),
 });
 
 export const contributions = pgTable(
@@ -56,7 +63,7 @@ export const contributions = pgTable(
     userId: varchar('user_id', { length: 255 }).references(
       () => userAccounts.userId
     ),
-    eventId: uuid('event_id').references(() => event.eventId),
+    eventId: uuid('event_id').references(() => events.eventId),
     amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
     contributedAt: timestamp('contributed_at').defaultNow(),
   },
