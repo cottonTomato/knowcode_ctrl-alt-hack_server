@@ -1,2 +1,6 @@
 import { Router } from 'express';
-import { validatorFactory, requireAuth } from '../../middlewares';
+import { getEvents } from './events.controller';
+
+export const eventRouter = Router();
+
+eventRouter.get('/', getEvents);

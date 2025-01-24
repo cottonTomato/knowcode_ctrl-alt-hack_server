@@ -11,7 +11,7 @@ import {
   notFoundHandler,
   globalErrorHandler,
 } from './middlewares';
-import { userRouter, tagsRouter } from './controllers';
+import { userRouter, friendRouter, eventRouter } from './controllers';
 
 const app = express();
 const httpServer = createServer(app);
@@ -29,8 +29,9 @@ app.use(accessLogger);
 app.get('/', (_req, res) => {
   res.send('<h1>Hello, World</h1>');
 });
-app.use('/tag', tagsRouter);
 app.use('/user', clerkMiddleware(), userRouter);
+app.use('/friend', clerkMiddleware(), friendRouter);
+app.use('/event', clerkMiddleware(), eventRouter);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);

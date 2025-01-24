@@ -3,9 +3,9 @@ import { validatorFactory, requireAuth } from '../../middlewares';
 import { addFriendsDto } from './friends.dto';
 import { addFriend, getFriendList, getTop5Friends } from './friends.controller';
 
-export const userRouter = Router();
-userRouter.use(requireAuth);
+export const friendRouter = Router();
+friendRouter.use(requireAuth);
 
-userRouter.post('/', validatorFactory(addFriendsDto), addFriend);
-userRouter.get('/', getFriendList);
-userRouter.get('/top-5', getTop5Friends);
+friendRouter.post('/', validatorFactory(addFriendsDto), addFriend);
+friendRouter.get('/', getFriendList);
+friendRouter.get('/top-5', getTop5Friends);
