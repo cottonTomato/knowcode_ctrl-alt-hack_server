@@ -31,7 +31,7 @@ app.get('/', (_req, res) => {
 });
 app.use('/user', clerkMiddleware(), userRouter);
 app.use('/friend', clerkMiddleware(), friendRouter);
-app.use('/event', clerkMiddleware(), eventRouter);
+app.use('/event', eventRouter);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
