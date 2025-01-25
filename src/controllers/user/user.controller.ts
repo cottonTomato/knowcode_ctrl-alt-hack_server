@@ -1,9 +1,10 @@
 import type { ReqHandler } from '../../types';
-import { db, userAccounts, contributions } from '../../db';
+import { db, userAccounts, contributions, events } from '../../db';
 import { eq, desc, sql, ilike, and, gte, lte } from 'drizzle-orm';
 import { StatusCodes } from 'http-status-codes';
 import { clerkClient } from '@clerk/express';
-import { IFindUser } from './user.dto';
+import { IAddEventToCal, IFindUser } from './user.dto';
+import { Unauthenticated } from '../../errors';
 
 export const onBoardUser: ReqHandler<object> = async function (req, res) {
   const userId = req.auth.userId!;
@@ -87,4 +88,50 @@ export const getTopUsers: ReqHandler<object> = async function (_req, res) {
     .limit(10);
 
   res.status(StatusCodes.OK).json({ status: 'Success', data: topUsers });
+};
+
+export const addEventToCalendar: ReqHandler<IAddEventToCal> = async function (
+  req,
+  res
+) {
+  const { eventId } = req.body;
+  const event = await db
+    .select({
+      summary: events.name,
+      description: events.description,
+      location: events.locationId,
+      start: { date: events.startDate },
+      end: { date: events.endDate },
+    })
+    .from(events)
+    .where(eq(events.eventId, eventId));
+
+  const clerkResponse = await clerkClient.users.getUserOauthAccessToken(
+    req.auth.userId!,
+    'oauth_google'
+  );
+
+  const accessToken = clerkResponse.data[0].token;
+
+  if (!accessToken) {
+    throw new Unauthenticated('No OAuth Token found');
+  }
+
+  const response = await fetch(
+    'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ ...event, eventType: 'outOfOffice' }),
+    }
+  );
+
+  if (response.ok) {
+    res.status(StatusCodes.CREATED).json({ status: 'Success' });
+  } else {
+    res.status(StatusCodes.SERVICE_UNAVAILABLE).json({ status: 'Failure' });
+  }
 };

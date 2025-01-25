@@ -5,3 +5,9 @@ export const findUserDto = z.object({
 });
 
 export type IFindUser = z.infer<typeof findUserDto>;
+
+export const addEventToCalDto = z.object({
+  eventId: z.string(),
+});
+
+export type IAddEventToCal = z.infer<typeof addEventToCalDto>;
